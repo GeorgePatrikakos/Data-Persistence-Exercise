@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,14 +13,16 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
+    private string savePath;
 
-    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -36,7 +40,9 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
-    }
+        HighScoreText.text = $"Highscore: {PlayerManager.HighScore} Name: {PlayerManager.HighPlayer}";
+        savePath = Application.persistentDataPath + "/save.dat";
+}
 
     private void Update()
     {
@@ -65,12 +71,27 @@ public class MainManager : MonoBehaviour
     void AddPoint(int point)
     {
         m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        ScoreText.text = $"Score: {m_Points} Name: {PlayerManager.LastPlayer}";
     }
 
     public void GameOver()
     {
         m_GameOver = true;
+        if(m_Points > PlayerManager.HighScore)
+        {
+            PlayerManager.HighScore = m_Points;
+            PlayerManager.HighPlayer = PlayerManager.LastPlayer;
+        }
+        HighScoreText.text = $"Highscore: {PlayerManager.HighScore} Name: {PlayerManager.HighPlayer}";
+
+        FileStream file;
+        if (File.Exists(savePath)) file = File.OpenWrite(savePath);
+        else file = File.Create(savePath);
+        string[] data = { PlayerManager.HighScore.ToString(), PlayerManager.HighPlayer };
+
+        BinaryFormatter bf = new BinaryFormatter();
+        bf.Serialize(file, data);
+        file.Close();
         GameOverText.SetActive(true);
     }
 }
